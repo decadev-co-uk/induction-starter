@@ -264,7 +264,8 @@ export function prioritizeTasks(tasks) {
       if (b.priority !== a.priority) return b.priority - a.priority
       // Deadline: earlier first (handle missing deadlines)
       if (a.deadline && b.deadline) {
-        if (a.deadline !== b.deadline) return a.deadline.localeCompare(b.deadline)
+        const deadlineDiff = a.deadline.getTime() - b.deadline.getTime()
+        if (deadlineDiff !== 0) return deadlineDiff
       } else if (a.deadline) {
         return -1
       } else if (b.deadline) {
