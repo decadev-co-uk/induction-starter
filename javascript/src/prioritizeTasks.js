@@ -212,6 +212,16 @@ export function prioritizeTasks(tasks) {
     }
   }
 
+  // Collect all tasks with no dependencies (in-degree 0)
+  const queue = []
+  for (const [id, degree] of inDegree) {
+    if (degree === 0) {
+      queue.push(id)
+    }
+  }
+
+  
+
   
 
   
