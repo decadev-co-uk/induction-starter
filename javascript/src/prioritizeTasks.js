@@ -200,6 +200,20 @@ export function prioritizeTasks(tasks) {
   const inDegree = new Map()
   const dependencyMap = new Map() // taskId -> Set of dependents (reverse edges)
 
+  // Initialize maps
+  for (const [id, task] of normalizedTasks) {
+    inDegree.set(id, 0)
+    dependencyMap.set(id, new Set())
+  }
+  for (const [id, task] of normalizedTasks) {
+    for (const depId of task.dependencies) {
+      inDegree.set(id, inDegree.get(id) + 1)
+      dependencyMap.get(depId).add(id)
+    }
+  }
+
+  
+
   
   //    - Tasks with no dependencies come first
   //    - Then tasks whose dependencies are already in the result
