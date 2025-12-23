@@ -188,16 +188,17 @@ export function prioritizeTasks(tasks) {
     validateTask(task, allTaskIds)
   }
 
-  // Normalize tasks (parse deadlines)
+  // Normalize tasks (parse deadlines) for comparison
   const normalizedTasks = normalizeTasks(tasks)
+  
+  // Keep original tasks map to preserve original deadline format
+  const originalTasksMap = new Map()
+  for (const task of tasks) {
+    originalTasksMap.set(task.id, task)
+  }
 
   // Detect circular dependencies
   detectCircularDependencies(normalizedTasks)
-
-  // TODO: Implement the prioritization algorithm
-  //
-  // Steps to implement:
-  // 1. Perform topological sort to handle dependencies
 
   // Kahn's algorithm for topological sort
   const inDegree = new Map()
@@ -226,7 +227,6 @@ export function prioritizeTasks(tasks) {
   const topoSortedIds = []
 
   while (queue.length > 0) {
-    // We only do topological sort here; sorting by priority etc is next step
     const currentId = queue.shift()
     topoSortedIds.push(currentId)
 
@@ -238,8 +238,8 @@ export function prioritizeTasks(tasks) {
     }
   }
 
-  // Build a quick task lookup map
-  const taskMap = new Map(normalizedTasks)
+  // Build normalized task lookup map for comparison
+  const normalizedTaskMap = new Map(normalizedTasks)
 
   // Prepare dependency tracking for scheduling
   const unscheduled = new Set(topoSortedIds)
@@ -248,20 +248,19 @@ export function prioritizeTasks(tasks) {
     dependencyLeft.set(id, new Set(task.dependencies))
   }
 
-  
   const finalOrder = []
-  // Instead of using topoSortedIds order, we prioritize at each step
+  // Prioritize at each step
   while (unscheduled.size > 0) {
     // Find all tasks with dependencies already fulfilled
     const ready = []
     for (const id of unscheduled) {
       if (dependencyLeft.get(id).size === 0) {
-        ready.push(taskMap.get(id))
+        ready.push(normalizedTaskMap.get(id))
       }
     }
 
-     // Sort ready tasks by: priority DESC, deadline ASC, estimatedHours ASC
-     ready.sort((a, b) => {
+    // Sort ready tasks by: priority DESC, deadline ASC, estimatedHours ASC
+    ready.sort((a, b) => {
       // Priority: higher first
       if (b.priority !== a.priority) return b.priority - a.priority
       // Deadline: earlier first (handle missing deadlines)
@@ -283,18 +282,20 @@ export function prioritizeTasks(tasks) {
       }
       return 0
     })
+    
     if (ready.length === 0) {
       // Circular dependency fallback (should not happen here)
       throw new CircularDependencyError('No tasks can be scheduled—circular dependency detected')
     }
 
     // Schedule all ready tasks, in order
-    for (const task of ready) {
-      finalOrder.push(task)
-      unscheduled.delete(task.id)
+    // Use original tasks to preserve original deadline format
+    for (const normalizedTask of ready) {
+      finalOrder.push(originalTasksMap.get(normalizedTask.id))
+      unscheduled.delete(normalizedTask.id)
       // Remove this task from dependencies of all remaining tasks
       for (const [id, deps] of dependencyLeft) {
-        if (deps.has(task.id)) deps.delete(task.id)
+        if (deps.has(normalizedTask.id)) deps.delete(normalizedTask.id)
       }
     }
   }
