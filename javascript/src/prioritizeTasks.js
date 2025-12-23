@@ -257,12 +257,34 @@ export function prioritizeTasks(tasks) {
         ready.push(taskMap.get(id))
       }
     }
-  }
 
-  return finalOrder
+     // Sort ready tasks by: priority DESC, deadline ASC, estimatedHours ASC
+     ready.sort((a, b) => {
+      // Priority: higher first
+      if (b.priority !== a.priority) return b.priority - a.priority
+      // Deadline: earlier first (handle missing deadlines)
+      if (a.deadline && b.deadline) {
+        if (a.deadline !== b.deadline) return a.deadline.localeCompare(b.deadline)
+      } else if (a.deadline) {
+        return -1
+      } else if (b.deadline) {
+        return 1
+      }
+      // Estimated hours: lower first (handle missing)
+      if (a.estimatedHours !== undefined && b.estimatedHours !== undefined) {
+        return a.estimatedHours - b.estimatedHours
+      } else if (a.estimatedHours !== undefined) {
+        return -1
+      } else if (b.estimatedHours !== undefined) {
+        return 1
+      }
+      return 0
+    })
+  }
 
   return null; // TODO: Implement the prioritization algorithm
 }
+
 
 // Export error classes for use in tests
 export { CircularDependencyError, InvalidDependencyError, InvalidPriorityError }
